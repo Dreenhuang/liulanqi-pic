@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      width: 200px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    h3 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    p {
+      font-size: 13px;
+      color: #666;
+      margin: 5px 0;
+    }
+    .shortcut {
+      background: #f0f0f0;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      margin: 10px 0;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <h3>图片浏览助手</h3>
+  <p>点击按钮启动图片查看器</p>
+  <div class="shortcut">快捷键: Ctrl+Shift+P</div>
+  <button id="openViewer">打开图片查看器</button>
+  <script src="popup.js"></script>
+</body>
+</html>
