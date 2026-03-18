@@ -854,48 +854,88 @@
     if (images.length === 0) return;
     
     const downloadPath = settings.downloadPath || 'D:\\\\PIC';
-    const confirmDownload = confirm(`将下载 ${images.length} 张图片到 ${downloadPath} 文件夹\n\n注意：由于浏览器安全限制，实际下载路径以浏览器设置为准。建议先在浏览器设置中配置下载位置。\n\n是否继续？`);
+    const confirmDownload = confirm(`将下载 ${images.length} 张图片\n\n注意：由于浏览器安全限制，实际下载路径以浏览器设置为准。建议先在 Chrome 设置中配置下载位置。\n\n是否继续？`);
     
     if (!confirmDownload) return;
     
     console.log('[图片浏览助手] 开始下载全部图片:', images.length, '张');
+    
+    // 显示下载进度
+    showDownloadProgress(0, images.length);
     
     let successCount = 0;
     let failCount = 0;
     
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
-      const filename = `image_${String(i + 1).padStart(3, '0')}_${Date.now()}.jpg`;
+      const ext = img.src.split('.').pop().split('?')[0] || 'jpg';
+      const filename = `image_${String(i + 1).padStart(3, '0')}.${ext}`;
       
       try {
-        // 使用 fetch 获取图片数据
-        const response = await fetch(img.src);
-        const blob = await response.blob();
-        
-        // 创建临时下载链接
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // 使用 Chrome downloads API 下载
+        await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({
+            action: 'downloadImage',
+            url: img.src,
+            filename: filename
+          }, (response) => {
+            if (response && response.success) {
+              resolve();
+            } else {
+              reject(new Error(response ? response.error : '下载失败'));
+            }
+          });
+        });
         
         successCount++;
+        showDownloadProgress(successCount + failCount, images.length);
         
-        // 每下载5张暂停一下，避免浏览器阻塞
-        if ((i + 1) % 5 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        // 每下载3张暂停一下，避免浏览器阻塞
+        if ((i + 1) % 3 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 800));
         }
       } catch (error) {
         console.error('[图片浏览助手] 下载失败:', img.src, error);
         failCount++;
+        showDownloadProgress(successCount + failCount, images.length);
       }
     }
     
+    hideDownloadProgress();
     alert(`下载完成！\n成功: ${successCount} 张\n失败: ${failCount} 张`);
     console.log('[图片浏览助手] 下载完成:', successCount, '成功,', failCount, '失败');
+  }
+  
+  // 显示下载进度
+  function showDownloadProgress(current, total) {
+    let progressEl = document.getElementById('image-viewer-download-progress');
+    if (!progressEl) {
+      progressEl = document.createElement('div');
+      progressEl.id = 'image-viewer-download-progress';
+      progressEl.style.cssText = `
+        position: fixed;
+        bottom: 70px;
+        left: 20px;
+        background: rgba(102, 126, 234, 0.95);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 1000002;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      `;
+      document.body.appendChild(progressEl);
+    }
+    progressEl.textContent = `下载中... ${current}/${total}`;
+  }
+  
+  // 隐藏下载进度
+  function hideDownloadProgress() {
+    const progressEl = document.getElementById('image-viewer-download-progress');
+    if (progressEl) {
+      progressEl.remove();
+    }
   }
 
   function toggleViewer() {
