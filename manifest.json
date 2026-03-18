@@ -32,8 +32,8 @@
   "commands": {
     "toggle-viewer": {
       "suggested_key": {
-        "default": "Ctrl+Shift+P",
-        "mac": "Command+Shift+P"
+        "default": "Ctrl+0",
+        "mac": "Command+0"
       },
       "description": "切换图片查看器"
     }
