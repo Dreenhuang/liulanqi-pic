@@ -1,50 +1,144 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      width: 200px;
-      padding: 15px;
+      width: 260px;
+      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
     }
-    h3 {
-      margin: 0 0 10px 0;
-      color: #333;
-    }
-    p {
-      font-size: 13px;
-      color: #666;
-      margin: 5px 0;
-    }
-    .shortcut {
-      background: #f0f0f0;
-      padding: 8px 12px;
-      border-radius: 5px;
-      font-family: monospace;
-      font-size: 12px;
-      margin: 10px 0;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
+    
+    .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .header h3 {
+      margin: 0 0 5px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+      margin: 0;
+    }
+    
+    .content {
+      padding: 20px;
+    }
+    
+    .shortcut-box {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .shortcut-label {
+      font-size: 11px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    
+    .shortcut-key {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 12px;
       border: none;
-      border-radius: 5px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 14px;
-      margin-top: 10px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-    button:hover {
-      opacity: 0.9;
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+    
+    .btn-secondary:hover {
+      background: #f0f0ff;
+    }
+    
+    .footer {
+      padding: 0 20px 20px;
+      text-align: center;
+    }
+    
+    .footer-text {
+      font-size: 11px;
+      color: #999;
     }
   </style>
 </head>
 <body>
-  <h3>图片浏览助手</h3>
-  <p>点击按钮启动图片查看器</p>
-  <div class="shortcut">快捷键: Ctrl+0</div>
-  <button id="openViewer">打开图片查看器</button>
+  <div class="header">
+    <h3>🖼️ 浏览器看图片</h3>
+    <p>像本地一样浏览网页图片</p>
+  </div>
+  
+  <div class="content">
+    <div class="shortcut-box">
+      <div class="shortcut-label">快捷键</div>
+      <div class="shortcut-key">Ctrl + 0</div>
+    </div>
+    
+    <button class="btn btn-primary" id="openViewer">
+      <span>📷</span> 打开图片查看器
+    </button>
+    
+    <button class="btn btn-secondary" id="openSettings">
+      <span>⚙️</span> 设置
+    </button>
+  </div>
+  
+  <div class="footer">
+    <div class="footer-text">点击页面右下角悬浮按钮也可打开</div>
+  </div>
+  
   <script src="popup.js"></script>
 </body>
 </html>

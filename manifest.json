@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "图片浏览助手",
-  "version": "1.0.0",
-  "description": "一键将网页图片转换为本地浏览体验，支持键盘左右切换和自动翻页",
+  "name": "浏览器看图片",
+  "version": "3.0.0",
+  "description": "一键将网页图片转换为本地浏览体验，支持键盘左右切换、自动翻页、图片下载",
   "permissions": [
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "downloads"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -16,7 +17,7 @@
     "default_icon": {
       "16": "icon16.svg"
     },
-    "default_title": "图片浏览助手"
+    "default_title": "浏览器看图片"
   },
   "background": {
     "service_worker": "background.js"
@@ -29,6 +30,7 @@
       "run_at": "document_idle"
     }
   ],
+  "options_page": "options.html",
   "commands": {
     "toggle-viewer": {
       "suggested_key": {

@@ -20,3 +20,8 @@ document.getElementById('openViewer').addEventListener('click', () => {
     }
   });
 });
+
+document.getElementById('openSettings').addEventListener('click', () => {
+  chrome.runtime.openOptionsPage();
+  window.close();
+});

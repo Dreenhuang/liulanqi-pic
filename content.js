@@ -20,6 +20,30 @@
   let isDragging = false;
   let dragStartX, dragStartY, scrollStartX, scrollStartY;
   let floatingBtn = null;
+  let settings = {
+    minWidth: 600,
+    minHeight: 600,
+    downloadPath: 'D:\\\\PIC'
+  };
+
+  // 加载设置
+  function loadSettings() {
+    return new Promise((resolve) => {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.get({
+          minWidth: 600,
+          minHeight: 600,
+          downloadPath: 'D:\\\\PIC'
+        }, (items) => {
+          settings = items;
+          console.log('[图片浏览助手] 设置已加载:', settings);
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
+  }
 
   function createFloatingButton() {
     console.log('[图片浏览助手] 尝试创建悬浮按钮, body存在:', !!document.body);
@@ -186,12 +210,44 @@
   justify-content: space-between;
   align-items: center;
 }
+#image-viewer-overlay .viewer-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
 #image-viewer-overlay .viewer-counter {
   color: white;
   font-size: 14px;
   background: rgba(255, 255, 255, 0.2);
   padding: 5px 15px;
   border-radius: 20px;
+}
+#image-viewer-overlay .viewer-download-all {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#image-viewer-overlay .viewer-download-all:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+#image-viewer-overlay.fullscreen-mode .viewer-download-all {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000001;
+  background: rgba(102, 126, 234, 0.9);
+  padding: 12px 20px;
+  font-size: 14px;
 }
 #image-viewer-overlay .viewer-cache-status {
   color: #fbbf24;
@@ -285,14 +341,14 @@
   function extractImagesQuick() {
     const collected = [];
     const seen = new Set();
-    const MIN_WIDTH = 600;
-    const MIN_HEIGHT = 600;
+    const minWidth = settings.minWidth || 600;
+    const minHeight = settings.minHeight || 600;
 
     document.querySelectorAll('img').forEach(img => {
       let src = img.src || img.dataset.src || img.dataset.original;
       if (!src || seen.has(src)) return;
       
-      if (img.naturalWidth >= MIN_WIDTH && img.naturalHeight >= MIN_HEIGHT) {
+      if (img.naturalWidth >= minWidth && img.naturalHeight >= minHeight) {
         seen.add(src);
         collected.push({ 
           src: src, 
@@ -364,8 +420,8 @@
       
       const newImages = [];
       const seen = new Set(images.map(img => img.src));
-      const MIN_WIDTH = 600;
-      const MIN_HEIGHT = 600;
+      const minWidth = settings.minWidth || 600;
+      const minHeight = settings.minHeight || 600;
       
       const imgElements = doc.querySelectorAll('img');
       const loadPromises = [];
@@ -377,7 +433,7 @@
         const promise = new Promise((resolve) => {
           const tempImg = new Image();
           tempImg.onload = () => {
-            if (tempImg.naturalWidth >= MIN_WIDTH && tempImg.naturalHeight >= MIN_HEIGHT) {
+            if (tempImg.naturalWidth >= minWidth && tempImg.naturalHeight >= minHeight) {
               resolve({ src: src, width: tempImg.naturalWidth, height: tempImg.naturalHeight });
             } else {
               resolve(null);
@@ -655,13 +711,16 @@
     }
   }
 
-  function initViewer() {
+  async function initViewer() {
     console.log('[图片浏览助手] 初始化查看器...');
+    
+    // 加载设置
+    await loadSettings();
     
     images = extractImagesQuick();
     
     if (images.length === 0) {
-      alert('未找到大尺寸图片（需要宽度和高度均超过600像素）');
+      alert(`未找到大尺寸图片（需要宽度和高度均超过 ${settings.minWidth || 600} 像素）\n\n您可以在扩展设置中调整过滤条件。`);
       return;
     }
 
@@ -682,7 +741,10 @@
         <button class="viewer-next">&#10095;</button>
       </div>
       <div class="viewer-footer">
-        <span class="viewer-counter">1 / ${images.length}</span>
+        <div class="viewer-footer-left">
+          <span class="viewer-counter">1 / ${images.length}</span>
+          <button class="viewer-download-all" title="下载全部图片">⬇️ 下载全部</button>
+        </div>
         <span class="viewer-cache-status">缓存: 准备中...</span>
         <div class="viewer-zoom-controls">
           <button class="zoom-btn" id="zoom-out">−</button>
@@ -774,6 +836,10 @@
     nextBtn.addEventListener('click', async () => await showImage(currentIndex + 1));
     document.addEventListener('keydown', handleKeydown);
 
+    // 下载全部图片按钮
+    const downloadAllBtn = viewer.querySelector('.viewer-download-all');
+    downloadAllBtn.addEventListener('click', downloadAllImages);
+
     for (let i = 0; i < Math.min(5, images.length); i++) {
       new Image().src = images[i].src;
     }
@@ -781,6 +847,55 @@
     updateCounter();
     
     preloadPages();
+  }
+
+  // 下载全部图片功能
+  async function downloadAllImages() {
+    if (images.length === 0) return;
+    
+    const downloadPath = settings.downloadPath || 'D:\\\\PIC';
+    const confirmDownload = confirm(`将下载 ${images.length} 张图片到 ${downloadPath} 文件夹\n\n注意：由于浏览器安全限制，实际下载路径以浏览器设置为准。建议先在浏览器设置中配置下载位置。\n\n是否继续？`);
+    
+    if (!confirmDownload) return;
+    
+    console.log('[图片浏览助手] 开始下载全部图片:', images.length, '张');
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      const filename = `image_${String(i + 1).padStart(3, '0')}_${Date.now()}.jpg`;
+      
+      try {
+        // 使用 fetch 获取图片数据
+        const response = await fetch(img.src);
+        const blob = await response.blob();
+        
+        // 创建临时下载链接
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        successCount++;
+        
+        // 每下载5张暂停一下，避免浏览器阻塞
+        if ((i + 1) % 5 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (error) {
+        console.error('[图片浏览助手] 下载失败:', img.src, error);
+        failCount++;
+      }
+    }
+    
+    alert(`下载完成！\n成功: ${successCount} 张\n失败: ${failCount} 张`);
+    console.log('[图片浏览助手] 下载完成:', successCount, '成功,', failCount, '失败');
   }
 
   function toggleViewer() {
