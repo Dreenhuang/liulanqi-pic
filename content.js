@@ -849,65 +849,98 @@
     preloadPages();
   }
 
+  // 加载所有页面
+  async function loadAllPages() {
+    console.log('[图片浏览助手] 开始加载所有页面...');
+    showLoading('正在加载所有页面...');
+    
+    let pageCount = 1;
+    while (hasMorePages) {
+      const result = await loadNextPage();
+      if (!result.success) {
+        break;
+      }
+      pageCount++;
+      
+      // 更新加载进度
+      const loadingEl = document.getElementById('image-viewer-loading');
+      if (loadingEl) {
+        loadingEl.textContent = `正在加载第${pageCount}页... (共${images.length}张)`;
+      }
+      
+      // 每加载5页暂停一下
+      if (pageCount % 5 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
+    hideLoading();
+    console.log('[图片浏览助手] 所有页面加载完成, 总图片:', images.length);
+    return images.length;
+  }
+
   // 下载全部图片功能
   async function downloadAllImages() {
     if (images.length === 0) return;
     
-    const downloadPath = settings.downloadPath || 'D:\\\\PIC';
-    const confirmDownload = confirm(`将下载 ${images.length} 张图片\n\n注意：由于浏览器安全限制，实际下载路径以浏览器设置为准。建议先在 Chrome 设置中配置下载位置。\n\n是否继续？`);
+    // 先询问是否加载所有页面
+    const loadAllFirst = confirm(`当前有 ${images.length} 张图片。\n\n是否先加载所有页面的图片？\n\n- 点击"确定"：加载所有页面后再下载（推荐，可下载完整图片集）\n- 点击"取消"：仅下载当前已加载的 ${images.length} 张图片`);
     
-    if (!confirmDownload) return;
+    if (loadAllFirst) {
+      const totalLoaded = await loadAllPages();
+      const confirmDownload = confirm(`共加载 ${totalLoaded} 张图片，准备开始下载。\n\n注意：下载将静默进行，请查看浏览器下载列表。建议在 Chrome 设置中配置下载位置。\n\n是否继续？`);
+      if (!confirmDownload) return;
+    } else {
+      const confirmDownload = confirm(`将下载当前 ${images.length} 张图片。\n\n注意：下载将静默进行，请查看浏览器下载列表。建议在 Chrome 设置中配置下载位置。\n\n是否继续？`);
+      if (!confirmDownload) return;
+    }
     
     console.log('[图片浏览助手] 开始下载全部图片:', images.length, '张');
     
     // 显示下载进度
-    showDownloadProgress(0, images.length);
+    showDownloadProgress(0, images.length, 'download');
     
     let successCount = 0;
     let failCount = 0;
     
+    // 批量发送下载请求，不等待完成
     for (let i = 0; i < images.length; i++) {
       const img = images[i];
       const ext = img.src.split('.').pop().split('?')[0] || 'jpg';
-      const filename = `image_${String(i + 1).padStart(3, '0')}.${ext}`;
+      const filename = `image_${String(i + 1).padStart(4, '0')}.${ext}`;
       
-      try {
-        // 使用 Chrome downloads API 下载
-        await new Promise((resolve, reject) => {
-          chrome.runtime.sendMessage({
-            action: 'downloadImage',
-            url: img.src,
-            filename: filename
-          }, (response) => {
-            if (response && response.success) {
-              resolve();
-            } else {
-              reject(new Error(response ? response.error : '下载失败'));
-            }
-          });
-        });
-        
-        successCount++;
-        showDownloadProgress(successCount + failCount, images.length);
-        
-        // 每下载3张暂停一下，避免浏览器阻塞
-        if ((i + 1) % 3 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 800));
+      // 发送下载请求，不等待响应（静默下载）
+      chrome.runtime.sendMessage({
+        action: 'downloadImage',
+        url: img.src,
+        filename: filename
+      }, (response) => {
+        if (response && response.success) {
+          successCount++;
+        } else {
+          failCount++;
+          console.error('[图片浏览助手] 下载失败:', img.src, response ? response.error : '未知错误');
         }
-      } catch (error) {
-        console.error('[图片浏览助手] 下载失败:', img.src, error);
-        failCount++;
-        showDownloadProgress(successCount + failCount, images.length);
+        // 更新进度
+        showDownloadProgress(successCount + failCount, images.length, 'download');
+      });
+      
+      // 每10张暂停一下，避免浏览器阻塞
+      if ((i + 1) % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
     
+    // 等待所有下载请求发送完成
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     hideDownloadProgress();
-    alert(`下载完成！\n成功: ${successCount} 张\n失败: ${failCount} 张`);
-    console.log('[图片浏览助手] 下载完成:', successCount, '成功,', failCount, '失败');
+    alert(`下载任务已提交！\n总数: ${images.length} 张\n\n请查看浏览器下载列表（Ctrl+J）\n部分图片可能需要时间开始下载`);
+    console.log('[图片浏览助手] 下载任务已提交:', images.length, '张');
   }
   
-  // 显示下载进度
-  function showDownloadProgress(current, total) {
+  // 显示进度
+  function showDownloadProgress(current, total, type = 'download') {
     let progressEl = document.getElementById('image-viewer-download-progress');
     if (!progressEl) {
       progressEl = document.createElement('div');
@@ -924,10 +957,13 @@
         font-weight: 500;
         z-index: 1000002;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        min-width: 150px;
+        text-align: center;
       `;
       document.body.appendChild(progressEl);
     }
-    progressEl.textContent = `下载中... ${current}/${total}`;
+    const label = type === 'download' ? '下载中' : '加载中';
+    progressEl.textContent = `${label}... ${current}/${total}`;
   }
   
   // 隐藏下载进度
