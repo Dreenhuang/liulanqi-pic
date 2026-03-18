@@ -54,9 +54,15 @@
     
     floatingBtn = document.createElement('div');
     floatingBtn.id = 'image-viewer-float-btn';
-    floatingBtn.innerHTML = '🖼';
     floatingBtn.title = '打开图片查看器 (Ctrl+0)';
-    floatingBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;width:50px;height:50px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;z-index:2147483647;box-shadow:0 4px 15px rgba(102,126,234,0.4);user-select:none;';
+    floatingBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2147483647;box-shadow:0 4px 15px rgba(0,0,0,0.3);user-select:none;overflow:hidden;background-size:cover;background-position:center;';
+    
+    // 使用插件图标作为背景图
+    const iconUrl = chrome.runtime.getURL('icon.jpg');
+    floatingBtn.style.backgroundImage = `url(${iconUrl})`;
+    
+    // 添加点击效果
+    floatingBtn.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
     
     let dragOffsetX, dragOffsetY;
     
@@ -88,6 +94,17 @@
         e.stopPropagation();
         toggleViewer();
       }
+    });
+    
+    // 添加悬停效果
+    floatingBtn.addEventListener('mouseenter', () => {
+      floatingBtn.style.transform = 'scale(1.1)';
+      floatingBtn.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+    });
+    
+    floatingBtn.addEventListener('mouseleave', () => {
+      floatingBtn.style.transform = 'scale(1)';
+      floatingBtn.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
     });
     
     document.body.appendChild(floatingBtn);

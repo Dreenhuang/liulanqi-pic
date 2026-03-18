@@ -15,9 +15,18 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icon16.svg"
+      "16": "icon.jpg",
+      "32": "icon.jpg",
+      "48": "icon.jpg",
+      "128": "icon.jpg"
     },
     "default_title": "浏览器看图片"
+  },
+  "icons": {
+    "16": "icon.jpg",
+    "32": "icon.jpg",
+    "48": "icon.jpg",
+    "128": "icon.jpg"
   },
   "background": {
     "service_worker": "background.js"
